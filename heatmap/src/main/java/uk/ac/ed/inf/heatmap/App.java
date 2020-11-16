@@ -2,10 +2,6 @@ package uk.ac.ed.inf.heatmap;
 
 import java.io.IOException;
 
-/**
- * Hello world!
- *
- */
 public class App 
 {
 	
@@ -24,19 +20,10 @@ public class App
     public static void main( String[] args ) throws IOException
     {
 
+    	// This function reads from file predictions.txt and returns a 2D array containing the values stored in colourVals
     	var colourVals = HelperFunctions.readFromFile(args[0], ROWS, COLUMNS);
-    	
-    	for(var i = 0; i < COLUMNS; ++i) {
-    		
-    		for(var j = 0; j < ROWS; ++j) {
-    			
-    			System.out.print(colourVals[i][j] + " ");
-    			
-    		}
-    		
-    		System.out.println();
-    	}
-    	
+
+    	// This function creates a file named heatmap.geojson containing the the geojson string form of the result
     	HelperFunctions.createMap(NORTHWEST, NORTHEAST, SOUTHEAST, colourVals);
         
     }

@@ -83,17 +83,20 @@ public class HelperFunctions {
 		
 		while(scanPredictions.hasNextLine()) {
 			
+			// I first read a line from the string and then remove the commas
 			var readLine = scanPredictions.nextLine();
 			var temp = readLine.split(",");
 			
 			for(var i = 0; i < temp.length; ++i) {
 				
+				// This removes the whitespace from the result
 				temp[i] = temp[i].strip();
 				
 			}
 			
 			for(var i = 0; i < ROWS; ++i) {
 				
+				// Parse the result to int
 				valueMatrix[columnCounter][i] = Integer.parseInt(temp[i]);
 				
 			}
@@ -107,7 +110,7 @@ public class HelperFunctions {
 	
 	public static void addProperties(int colourValue, Feature f) {
 		
-		// First, add the fill-opacity property as it is the same for evey feature
+		// First, add the fill-opacity property as it is the same for every feature
         f.addNumberProperty("fill-opacity", 0.75);
 		
         // Create a hashmap to store the intervals
@@ -133,7 +136,7 @@ public class HelperFunctions {
         
         }
         
-        // Add the found property
+        // Add the found value to the properties
         f.addStringProperty("fill", foundProperty);
         f.addStringProperty("rgb-string", foundProperty);
 	}
