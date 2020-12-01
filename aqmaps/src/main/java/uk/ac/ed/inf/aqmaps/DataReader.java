@@ -20,7 +20,8 @@ import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.LineString;
-import com.mapbox.geojson.Point;;
+import com.mapbox.geojson.Point;
+import com.mapbox.geojson.Polygon;;
 
 
 // This class is a helper class that will help me visualise some of the stations and read the information from the server
@@ -261,4 +262,45 @@ public class DataReader {
 		return mapping;
 		
 	}
+	
+	public static void getConfinementArea(HttpClient client) {
+		
+		var requestLocation = HttpRequest.newBuilder().uri(URI.create("http://localhost:80/buildings/no-fly-zones.geojson")).build();
+		HttpResponse<String> response;
+    	try {
+    		
+			response = client.send(requestLocation, BodyHandlers.ofString());
+			var result = response.body();
+			
+			var noFlyFeatures = FeatureCollection.fromJson(result);
+			var noFlyList = noFlyFeatures.features();
+			
+			for(var nf : noFlyList) {
+				
+				System.out.println(nf.getProperty("name"));
+				var geoNF = nf.geometry();
+				var geoPoly = (Polygon)geoNF;
+				
+				for(var coord : geoPoly.coordinates().get(0)) {
+					
+					System.out.println(coord.coordinates().toString());
+					
+				}
+				
+				System.out.println();
+				
+			}
+			
+			
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			System.out.println("Unable to connect to server");
+			System.exit(1);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+	
 }

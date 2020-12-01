@@ -102,7 +102,7 @@ public class DroneMovement {
 	}
 	
 	
-	public static void droneMovement(double[] startingCoordinates, HashMap<double[], Station> route) throws FileNotFoundException {
+	public static void droneMovement(double[] startingCoordinates, HashMap<double[], Station> route, String day, String month, String year) throws FileNotFoundException {
 		
 		// This variable will count my moves. If the moves get to 150, the program will be terminated and the drone will stop
 		int moveCounter = 0;
@@ -122,34 +122,74 @@ public class DroneMovement {
 		
 		// This will be the beginning of the loop
 		double[] currCoord = {startingCoordinates[0], startingCoordinates[1]};
+		double[] prevCoord = {0.0, 0.0};
 		var nextCoord = temp.get(0);
 		var dist = 0.0;
 		var angle = 0;
 		var counter = 0;
+		var routeSize = temp.size();
+		var logString = "";
+
+		System.out.println("Route size = " + routeSize);
 		
-		
-		while(counter < temp.size()) {
+		while(counter < routeSize) {
 			
 			dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
 			
-			while(dist > 0.0002) {
+			// We should always have one initial move
+			var initMove = 0;
+			while(dist > 0.0002 || initMove == 0) {
 				
 				angle = CalculationFunctions.getAngle(currCoord, nextCoord);
+				moveCounter++;
 				
 				var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
 				var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
 				
+				prevCoord[0] = currCoord[0];
+				prevCoord[1] = currCoord[1];
+				
 				currCoord[0] = lngNew;
 				currCoord[1] = latNew;
-								
+				
+				
 				var nextPoint = Point.fromLngLat(lngNew, latNew);
 				lineList.add(nextPoint);
 				
-				moveCounter++;
+				initMove++;
 				dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
+				
+				if(dist < 0.0002) {
+					
+					logString += moveCounter + "," + prevCoord[0] + "," + prevCoord[1] + "," + angle + "," + currCoord[0] + "," + currCoord[1] + "," + route.get(nextCoord).getLocation() + "\n";
+					
+				} else {
+					
+					logString += moveCounter + "," + prevCoord[0] + "," + prevCoord[1] + "," + angle + "," + currCoord[0] + "," + currCoord[1] + "," + "null" + "\n";
+					
+				}
 				
 				
 			}
+			
+			
+//			do {
+//				
+//				angle = CalculationFunctions.getAngle(currCoord, nextCoord);
+//				
+//				var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+//				var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+//				
+//				currCoord[0] = lngNew;
+//				currCoord[1] = latNew;
+//								
+//				var nextPoint = Point.fromLngLat(lngNew, latNew);
+//				lineList.add(nextPoint);
+//				
+//				moveCounter++;
+//				dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
+//				
+//			}while(dist > 0.0002);
 			
 			System.out.println("Move counter: " + moveCounter);
 			
@@ -157,8 +197,9 @@ public class DroneMovement {
 			featureList.add(nextStation);
 			counter++;
 
-			if(counter < temp.size()) {
-				nextCoord = temp.get(counter);	
+			if(counter < routeSize) {
+				temp.remove(0);
+				nextCoord = temp.get(0);	
 			}
 			
 		}
@@ -184,6 +225,9 @@ public class DroneMovement {
 			var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
 			var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
 			
+			prevCoord[0] = currCoord[0];
+			prevCoord[1] = currCoord[1];
+			
 			currCoord[0] = lngNew;
 			currCoord[1] = latNew;
 							
@@ -193,54 +237,23 @@ public class DroneMovement {
 			moveCounter++;
 			dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
 			
+			if(dist > 0.0003) {
+				
+				logString += moveCounter + "," + prevCoord[0] + "," + prevCoord[1] + "," + angle + "," + currCoord[0] + "," + currCoord[1] + "," + "null" + "\n";
+				
+			} else {
+				
+				logString += moveCounter + "," + prevCoord[0] + "," + prevCoord[1] + "," + angle + "," + currCoord[0] + "," + currCoord[1] + "," + "null";
+				
+			}
+			
 		}
-		
-//		while(moveCounter <= 150) {
-//			
-//			dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
-//			
-//			while(dist > 0.0002) {
-//				
-//				angle = CalculationFunctions.getAngle(currCoord, nextCoord);
-//				
-//				var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
-//				var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
-//				
-//				currCoord[0] = lngNew;
-//				currCoord[1] = latNew;
-//				var nextPoint = Point.fromLngLat(lngNew, latNew);
-//				lineList.add(nextPoint);
-//				
-//				moveCounter++;
-//				dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
-//				
-//				
-//			}
-//			
-//			System.out.println(moveCounter);
-//			
-//			var nextStation = DataReader.readStation(nextCoord, route.get(nextCoord));
-//			featureList.add(nextStation);
-//			
-//			temp.remove(0);
-//			
-//			if(temp.isEmpty()) {
-//				
-//				nextCoord = startingCoordinates;
-//				break;
-//				
-//			} else {
-//				
-//				nextCoord = temp.get(0);
-//				
-//			}
-//			
-//		}
 		
 		LineString line = LineString.fromLngLats(lineList);
 		Geometry lineGeo = (Geometry)line;
 		Feature lineFeature = Feature.fromGeometry(lineGeo);
 		
+//		System.out.println("Is temp empty? " + temp.isEmpty());
 //		if(!temp.isEmpty()) {
 //			
 //			
@@ -266,9 +279,13 @@ public class DroneMovement {
         
         String output = fc.toJson();
         
-        PrintWriter out = new PrintWriter("test3.geojson");
+        PrintWriter out = new PrintWriter("readings-" + day + "-" + month + "-" + year + ".geojson");
         out.println(output);
         out.close();
+        
+        PrintWriter out2 = new PrintWriter("flightpath-" + day + "-" + month + "-" + year + ".txt");
+        out2.println(logString);
+        out2.close();
         
         System.out.println(moveCounter);
 		

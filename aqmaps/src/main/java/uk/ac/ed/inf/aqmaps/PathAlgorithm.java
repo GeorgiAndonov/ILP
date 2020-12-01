@@ -21,14 +21,6 @@ public class PathAlgorithm {
 		// This is the function that finds the path
 		var result = PathAlgorithm.pathFinderAlgorithm(coordinatesWithStations, coordList);
 		
-//		for(var i = 1; i < result.size(); i++) {
-//			
-//			System.out.println("Result lng: " + result.get(i)[0]);
-//			System.out.println("Result lat: " + result.get(i)[1]);
-//			System.out.println(coordinatesWithStations.get(result.get(i)).getLocation());
-//			
-//		}
-		
 		// Create a variable to store the new route
 		var route = new LinkedHashMap<double[], Station>();
 		
@@ -90,32 +82,35 @@ public class PathAlgorithm {
 		}
 
 		// After finding the greedy solution, we will optimize it here using Two Opt
-//		Boolean swap = true;
-//		while(swap) {
-//			
-//			swap = false;
-//			var bestDistance = PathAlgorithm.calculateTourValue(result);
-//            for(var i = 1; i < result.size() - 2; i++) {
-//                for(var j = i + 1; j < result.size() - 1; j++) {
-//       
-//                	var newRoute = PathAlgorithm.swap(result, i, j);
-//                	var newDist = PathAlgorithm.calculateTourValue(newRoute);
-//                	
-//                    if(newDist < bestDistance) {
-//                    	
-//                    	CalculationFunctions.deepArrayListCopy(result, newRoute);
-//                    	bestDistance = newDist;
-//                    	swap = true;
-//                    	
-//                    }
-//            	}
-//        	}
-//			
-//		}
+		Boolean swap = true;
+		while(swap) {
+			
+			swap = false;
+			var bestDistance = PathAlgorithm.calculateTourValue(result);
+            for(var i = 1; i < result.size() - 2; i++) {
+                for(var j = i + 1; j < result.size() - 1; j++) {
+       
+                	var newRoute = PathAlgorithm.swap(result, i, j);
+                	var newDist = PathAlgorithm.calculateTourValue(newRoute);
+                	
+                    if(newDist < bestDistance) {
+                    	
+                    	result = newRoute;
+                    	bestDistance = newDist;
+                    	swap = true;
+                    	
+                    }
+            	}
+        	}
+			
+		}
 		
-		System.out.println("Initial coordinates lng = " + result.get(0)[0]);
-		System.out.println("Initial coordinates lat = " + result.get(0)[1]);
-		
+		for(var i = 0; i < result.size(); i++) {
+			
+			System.out.println("Result " + i + " lng = " + result.get(i)[0]);
+			System.out.println("Result " + i + " lat = " + result.get(i)[1]);
+			
+		}
 		
 		System.out.println();
 		

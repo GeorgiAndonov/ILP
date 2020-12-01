@@ -23,6 +23,10 @@ public class CalculationFunctions {
 			angle += 360;
 		}
 		
+		if(angle == 360) {
+			angle = 0;
+		}
+		
 		return angle;
 	}
 	

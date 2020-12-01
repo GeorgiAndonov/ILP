@@ -1,5 +1,6 @@
 package uk.ac.ed.inf.aqmaps;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -63,8 +64,9 @@ public class App
 		}
 		
     	
-    	DroneMovement.test();
-    	DroneMovement.droneMovement(startCoordinates, route);
+//    	DroneMovement.test();
+    	DroneMovement.droneMovement(startCoordinates, route, args[0], args[1], args[2]);
+    	DataReader.getConfinementArea(client);
     	
     }
 }
