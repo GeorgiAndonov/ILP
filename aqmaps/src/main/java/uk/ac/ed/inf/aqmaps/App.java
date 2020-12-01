@@ -9,6 +9,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.lang.reflect.Type;
+import java.util.LinkedHashMap;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;;
@@ -30,42 +31,40 @@ public class App
 	private static final HttpClient client = HttpClient.newHttpClient();
 	
 	
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException, InterruptedException
     {
      
+    	var stationList = DataReader.readStationsForDay(args[0], args[1], args[2], client);
     	
-    	// HttpClient assumes that it is a GET request by default.
-    	var request = HttpRequest.newBuilder()
-    	.uri(URI.create("http://localhost:80/maps/2020/01/02/air-quality-data.json"))
-    	.build();
+//    	for(var st : stationList) {
+//    		
+//    		System.out.println(st.getLocation());
+//    		
+//    	}
     	
-    	// The response object is of class HttpResponse<String>
-    	HttpResponse<String> response;
-		try {
+    	DataReader.createMapWithStations(NORTHWEST, NORTHEAST, SOUTHEAST, SOUTHWEST, client, stationList);
+    	HashMap<double[], Station> test = DataReader.computeCoordinates(stationList, client);
+    	
+//    	for(var t : test.keySet()) {
+//    		System.out.println();
+//    		System.out.println(t[0] + " " + t[1] + " ");
+//    		System.out.println(test.get(t).getLocation());
+//    	}
+    	
+    	double[] startCoordinates = {Double.parseDouble(args[4]), Double.parseDouble(args[3])};
+    	
+    	var route = PathAlgorithm.createRoute(startCoordinates, test);
+    	
+		// Printing the locations found
+		for(var r : route.keySet()) {
 			
-			response = client.send(request, BodyHandlers.ofString());
-	    	String result = response.body();
-	    	
-	    	Type listType = new TypeToken<ArrayList<Station>>() {}.getType();
-	    	ArrayList<Station> stationList = new Gson().fromJson(result, listType);
-	    	
-	    	DataReader.createMapWithStations(NORTHWEST, NORTHEAST, SOUTHEAST, SOUTHWEST, client, stationList);
-	    	HashMap<double[], Station> test = DataReader.computeCoordinates(stationList, client);
-	    	
-	    	double[] startCoordinates = {-3.187305, 55.944492};
-	    	
-	    	var route = DroneMovement.createRoute(startCoordinates, test);
-	    	
-	    	
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			System.out.println("Unable to connect to server");
-			System.exit(1);
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-
+			System.out.println(route.get(r).getLocation());
+			
 		}
+		
+    	
+    	DroneMovement.test();
+    	DroneMovement.droneMovement(startCoordinates, route);
+    	
     }
 }

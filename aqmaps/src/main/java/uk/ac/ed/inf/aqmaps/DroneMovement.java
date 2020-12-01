@@ -1,206 +1,279 @@
 package uk.ac.ed.inf.aqmaps;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.lang.Math;
+
+import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.FeatureCollection;
+import com.mapbox.geojson.Geometry;
+import com.mapbox.geojson.LineString;
+import com.mapbox.geojson.Point;
 
 public class DroneMovement {
-
 	
-	public static HashMap<double[], Station> createRoute(double[] startCoordinates, HashMap<double[], Station> coordinatesWithStations) {
+	
+	public static void test() throws FileNotFoundException {
 		
-		//We first create an ArrayList to store the coordinates - this gives us simpler access to the individual components of each coordinate
-		var coordList = new ArrayList<double[]>();
-		coordList.add(startCoordinates);
+		double[] coordinates1 = {-3.188396, 55.944425};
+		double[] coordinates2 = {-3.188271, 55.944063};
 		
-		for(var key : coordinatesWithStations.keySet()) {
-			coordList.add(key);
+		System.out.println("Test distance: " + CalculationFunctions.calculateDistBetweenPoints(coordinates1, coordinates2));
+		
+		Point stationPoint1 = Point.fromLngLat(coordinates1[0], coordinates1[1]);
+		Geometry stationGeo1 = (Geometry)stationPoint1;
+		Feature stationFeature1 = Feature.fromGeometry(stationGeo1);
+		
+		stationFeature1.addStringProperty("marker-size", "medium");
+		stationFeature1.addStringProperty("location", "starting");
+		stationFeature1.addStringProperty("rgb-string", "#aaaaaa");
+		stationFeature1.addStringProperty("marker-color", "#aaaaaa");
+		
+		Point stationPoint2 = Point.fromLngLat(coordinates2[0], coordinates2[1]);
+		Geometry stationGeo2 = (Geometry)stationPoint2;
+		Feature stationFeature2 = Feature.fromGeometry(stationGeo2);
+		
+		stationFeature2.addStringProperty("marker-size", "medium");
+		stationFeature2.addStringProperty("location", "scare.cubs.resort");
+		stationFeature2.addStringProperty("rgb-string", "#aaaaaa");
+		stationFeature2.addStringProperty("marker-color", "#aaaaaa");
+		
+		
+		var angle = CalculationFunctions.getAngle(coordinates1, coordinates2);
+		
+		System.out.println("Angle after the first calculation:");
+		System.out.println(angle);
+		
+		var lngNew = coordinates1[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+		var latNew = coordinates1[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+		
+		double[] next = {lngNew, latNew};
+		
+		System.out.println("The distance travelled is: " + CalculationFunctions.calculateDistBetweenPoints(coordinates1, next));
+		
+		Point nextPoint = Point.fromLngLat(lngNew, latNew);
+		
+		var lineList = new ArrayList<Point>();
+		lineList.add(stationPoint1);
+		lineList.add(nextPoint);
+		
+		
+		var dist = CalculationFunctions.calculateDistBetweenPoints(next, coordinates2);
+		var featureList = new ArrayList<Feature>();
+		var count = 1;
+
+		while(dist > 0.0002) {
+			
+			angle = CalculationFunctions.getAngle(next, coordinates2);
+			System.out.println(angle);
+			
+			lngNew = next[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+			latNew = next[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+			
+			next[0] = lngNew;
+			next[1] = latNew;
+			
+			
+			nextPoint = Point.fromLngLat(lngNew, latNew);
+			lineList.add(nextPoint);
+			
+			dist = CalculationFunctions.calculateDistBetweenPoints(next, coordinates2);
+			count++;
+			
 		}
 		
-		// This is the function that finds the path
-		var route = DroneMovement.pathFinderAlgorithm(coordinatesWithStations, coordList);
+		LineString line = LineString.fromLngLats(lineList);
+		Geometry lineGeo = (Geometry)line;
+		Feature lineFeature = Feature.fromGeometry(lineGeo);
 		
-		return route;
+		featureList.add(stationFeature1);
+		featureList.add(stationFeature2);
+		featureList.add(lineFeature);
 		
+        FeatureCollection fc = FeatureCollection.fromFeatures(featureList);
+        
+        String output = fc.toJson();
+        
+        PrintWriter out = new PrintWriter("test2.geojson");
+        out.println(output);
+        out.close();
+        
 	}
 	
-	// I've decided to first find a path using the nearest neighbour approach which is a greedy algorithm and then optimize it with 2opt
-	private static HashMap<double[], Station> pathFinderAlgorithm(HashMap<double[], Station> coordinatesWithStations, ArrayList<double[]> coordList) {
+	
+	public static void droneMovement(double[] startingCoordinates, HashMap<double[], Station> route) throws FileNotFoundException {
 		
-		// This temporary array will be used to keep track of the available stations - I want it to be a deep copy of the array
+		// This variable will count my moves. If the moves get to 150, the program will be terminated and the drone will stop
+		int moveCounter = 0;
+		
+		// This variable will be used to track if we have available stations from the route to reach
 		var temp = new ArrayList<double[]>();
+		var lineList = new ArrayList<Point>();
 		
-		for(var coord : coordList) {
-			temp.add(coord);
+		// Variable to store the features
+		var featureList = new ArrayList<Feature>();
+		
+		// Fill my temporary array
+		for(var key : route.keySet()) {
+			temp.add(key);
 		}
 		
-		// The final coordinates of the route will be here
-		var result = new ArrayList<double[]>();
-		result.add(temp.get(0));
-		temp.remove(0);
 		
-		// Get the starting position
-		var currCoord = result.get(0);
+		// This will be the beginning of the loop
+		double[] currCoord = {startingCoordinates[0], startingCoordinates[1]};
+		var nextCoord = temp.get(0);
+		var dist = 0.0;
+		var angle = 0;
 		var counter = 0;
 		
 		
-		// First, the greedy solution
-		while(counter < coordList.size() - 1) {
+		while(counter < temp.size()) {
 			
-			var minDist = DroneMovement.calculateDistBetweenPoints(currCoord, temp.get(0));
-			System.out.println(minDist);
-			var nextItem = temp.get(0);
-			double distT;
+			dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
 			
-			for(var t : temp) {
+			while(dist > 0.0002) {
 				
-				distT = DroneMovement.calculateDistBetweenPoints(currCoord, t);
-				if(minDist > distT) {
-					
-					minDist = distT;
-					nextItem = t;
-					
-				}
+				angle = CalculationFunctions.getAngle(currCoord, nextCoord);
+				
+				var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+				var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+				
+				currCoord[0] = lngNew;
+				currCoord[1] = latNew;
+								
+				var nextPoint = Point.fromLngLat(lngNew, latNew);
+				lineList.add(nextPoint);
+				
+				moveCounter++;
+				dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
+				
+				
 			}
-			result.add(nextItem);
-			temp.remove(nextItem);
-			currCoord = nextItem;
-			counter += 1;
 			
-		}
+			System.out.println("Move counter: " + moveCounter);
+			
+			var nextStation = DataReader.readStation(nextCoord, route.get(nextCoord));
+			featureList.add(nextStation);
+			counter++;
 
-		// After finding the greedy solution, we will optimize it here using Two Opt
-		Boolean swap = true;
-		while(swap) {
-			
-			swap = false;
-			var bestDistance = DroneMovement.calculateTourValue(result);
-            for(var i = 1; i < result.size() - 2; i++) {
-                for(var j = i + 1; j < result.size() - 1; j++) {
-       
-                	var newRoute = DroneMovement.swap(result, i, j);
-                	var newDist = DroneMovement.calculateTourValue(newRoute);
-                	
-                    if(newDist < bestDistance) {
-                    	
-                    	result = newRoute;
-                    	bestDistance = newDist;
-                    	swap = true;
-                    	
-                    }
-            	}
-        	}
+			if(counter < temp.size()) {
+				nextCoord = temp.get(counter);	
+			}
 			
 		}
 		
-		// Create a variable to store the new route
-		var route = new HashMap<double[], Station>();
+		currCoord[0] = nextCoord[0];
+		currCoord[1] = nextCoord[1];
 		
-		// Put the values in it
-		for(var i = 1; i < result.size(); ++i) {
+		System.out.println("Curr coord lng = " + currCoord[0] + " " + "lat = " + currCoord[1]);
+		
+		nextCoord[0] = startingCoordinates[0];
+		nextCoord[1] = startingCoordinates[1];
+		
+		System.out.println("Next coord lng = " + startingCoordinates[0] + " " + "lat = " + startingCoordinates[1]);
+		System.out.println("Next coord lng = " + nextCoord[0] + " " + "lat = " + nextCoord[1]);
+		
+		dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
+		System.out.println("Distance between last visited and start = " + dist);
+		
+		while(dist > 0.0003) {
 			
-			route.put(result.get(i), coordinatesWithStations.get(result.get(i)));
+			angle = CalculationFunctions.getAngle(currCoord, nextCoord);
+			
+			var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+			var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+			
+			currCoord[0] = lngNew;
+			currCoord[1] = latNew;
+							
+			var nextPoint = Point.fromLngLat(lngNew, latNew);
+			lineList.add(nextPoint);
+			
+			moveCounter++;
+			dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
 			
 		}
 		
-		// Printing the locations found
-		for(var r : route.keySet()) {
-			
-			System.out.println(route.get(r).getLocation());
-			
-		}
-		
-		// Calculate the total tour value
-		System.out.println(DroneMovement.calculateTourValue(result));
-		
-		return route;
-	}
-	
-	
-//	private static ArrayList<double[]> TwoOptOptimization(ArrayList<double[]> result) {
-//		
-//		var optimizedResult = new ArrayList<double[]>();
-//		
-//		Boolean swap = true;
-//		while(swap) {
+//		while(moveCounter <= 150) {
 //			
-//			swap = false;
-//			var bestDistance = DroneMovement.calculateTourValue(result);
-//            for(var i = 1; i < result.size() - 2; i++) {
-//                for(var j = i + 1; j < result.size() - 1; j++) {
-//       
-//                	var newRoute = DroneMovement.swap(result, i, j);
-//                	var newDist = DroneMovement.calculateTourValue(newRoute);
-//                	
-//                    if(newDist < bestDistance) {
-//                    	
-//                    	optimizedResult = newRoute;
-//                    	bestDistance = newDist;
-//                    	swap = true;
-//                    	
-//                    }
-//            	}
-//        	}
+//			dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
+//			
+//			while(dist > 0.0002) {
+//				
+//				angle = CalculationFunctions.getAngle(currCoord, nextCoord);
+//				
+//				var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+//				var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+//				
+//				currCoord[0] = lngNew;
+//				currCoord[1] = latNew;
+//				var nextPoint = Point.fromLngLat(lngNew, latNew);
+//				lineList.add(nextPoint);
+//				
+//				moveCounter++;
+//				dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
+//				
+//				
+//			}
+//			
+//			System.out.println(moveCounter);
+//			
+//			var nextStation = DataReader.readStation(nextCoord, route.get(nextCoord));
+//			featureList.add(nextStation);
+//			
+//			temp.remove(0);
+//			
+//			if(temp.isEmpty()) {
+//				
+//				nextCoord = startingCoordinates;
+//				break;
+//				
+//			} else {
+//				
+//				nextCoord = temp.get(0);
+//				
+//			}
 //			
 //		}
-//		
-//		return null;
-//	}
-	
-	
-	// Calculate the total length of the given tour
-	private static double calculateTourValue(ArrayList<double[]> tourCoordinates) {
 		
-		double dist = 0;
+		LineString line = LineString.fromLngLats(lineList);
+		Geometry lineGeo = (Geometry)line;
+		Feature lineFeature = Feature.fromGeometry(lineGeo);
 		
-		for(var i = 0; i < tourCoordinates.size(); ++i) {
-			
-			dist += DroneMovement.calculateDistBetweenPoints(tourCoordinates.get(i), tourCoordinates.get((i+1) % tourCoordinates.size()));
-			
-		}
+//		if(!temp.isEmpty()) {
+//			
+//			
+//			for(var coord : temp) {
+//				
+//				Point stationPoint = Point.fromLngLat(coord[0], coord[1]);
+//				Geometry stationGeo = (Geometry)stationPoint;
+//				Feature stationFeature = Feature.fromGeometry(stationGeo);
+//				
+//				stationFeature.addStringProperty("marker-size", "medium");
+//				stationFeature.addStringProperty("location", route.get(coord).getLocation());
+//				stationFeature.addStringProperty("rgb-string", "#aaaaaa");
+//				stationFeature.addStringProperty("marker-color", "#aaaaaa");
+//				
+//				featureList.add(stationFeature);
+//				
+//			}
+//			
+//		}
 		
-		return dist;
-	}
-	
-	// Helper function that will help us with calculating the distance between 2 points
-	private static double calculateDistBetweenPoints(double[] point1, double[] point2) {
-		
-		return Math.hypot(Math.abs(point1[0] - point2[0]), Math.abs(point1[1] - point2[1]));
-		
-	}
-	
-	
-	// Swap function for the Two Opt solution
-	private static ArrayList<double[]> swap(ArrayList<double[]> route, int i, int j) {
-		
-        //conducts a 2 opt swap by inverting the order of the points between i and j
-        ArrayList<double[]> newRoute = new ArrayList<>();
-
-        //take array up to first point i and add to newTour
-        for(int c = 0; c <= i - 1; c++) {
+		featureList.add(lineFeature);
+        FeatureCollection fc = FeatureCollection.fromFeatures(featureList);
         
-        	newRoute.add(route.get(c));
+        String output = fc.toJson();
         
-        }
-
-        //invert order between 2 passed points i and j and add to newTour
-        int dec = 0;
-        for(int c = i; c <= j; c++) {
+        PrintWriter out = new PrintWriter("test3.geojson");
+        out.println(output);
+        out.close();
         
-        	newRoute.add(route.get(j - dec));
-            dec++;
-        
-        }
-
-        //append array from point j to end to newTour
-        for(int c = j + 1; c < route.size(); c++) {
-           
-        	newRoute.add(route.get(c));
-        
-        }
-
-        return newRoute;
+        System.out.println(moveCounter);
 		
 	}
 	
+	
+
 }
