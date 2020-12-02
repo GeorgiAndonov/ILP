@@ -1,5 +1,6 @@
 package uk.ac.ed.inf.aqmaps;
 
+// This class represents the stations read from the air-quality.json
 public class Station {
 
 	

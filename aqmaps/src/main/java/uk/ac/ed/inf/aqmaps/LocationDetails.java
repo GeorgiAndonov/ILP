@@ -1,5 +1,7 @@
 package uk.ac.ed.inf.aqmaps;
 
+
+// This class represents the data read from details.json - some of the data here is redundant
 public class LocationDetails {
 
 	

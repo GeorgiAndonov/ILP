@@ -1,9 +1,11 @@
 package uk.ac.ed.inf.aqmaps;
 
+import java.awt.geom.Line2D;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
@@ -11,6 +13,8 @@ import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 
+
+// This class moves the drone according to the restrictions
 public class DroneMovement {
 	
 	
@@ -102,7 +106,7 @@ public class DroneMovement {
 	}
 	
 	
-	public static void droneMovement(double[] startingCoordinates, HashMap<double[], Station> route, String day, String month, String year) throws FileNotFoundException {
+	public static void droneMovement(double[] startingCoordinates, HashMap<double[], Station> route, ArrayList<ArrayList<Line2D>> noFlyZone, String day, String month, String year, String seed) throws FileNotFoundException {
 		
 		// This variable will count my moves. If the moves get to 150, the program will be terminated and the drone will stop
 		int moveCounter = 0;
@@ -120,19 +124,23 @@ public class DroneMovement {
 		}
 		
 		
-		// This will be the beginning of the loop
+		// Loop variables:
+		// Random number that'll be used during movement
+		var dirDesider = new Random(Long.parseLong(seed));
 		double[] currCoord = {startingCoordinates[0], startingCoordinates[1]};
+		// This will store the previous coordinates after calculation - used for testing the confinement area
 		double[] prevCoord = {0.0, 0.0};
 		var nextCoord = temp.get(0);
 		var dist = 0.0;
 		var angle = 0;
+		// This will keep track of how many stations the drone has read
 		var counter = 0;
 		var routeSize = temp.size();
+		// This will store the string that will be written in the flight path text file
 		var logString = "";
-
-		System.out.println("Route size = " + routeSize);
 		
-		while(counter < routeSize) {
+		// Loop ends if everything's been read or the move counter exceeds the limit
+		while(counter < routeSize && moveCounter <= 150) {
 			
 			dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
 			
@@ -143,6 +151,7 @@ public class DroneMovement {
 				angle = CalculationFunctions.getAngle(currCoord, nextCoord);
 				moveCounter++;
 				
+				// Calculate potential next coordinates
 				var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
 				var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
 				
@@ -152,6 +161,22 @@ public class DroneMovement {
 				currCoord[0] = lngNew;
 				currCoord[1] = latNew;
 				
+				// Test if the next coordinates intersect a no fly polygon - find coordinates that do not 
+				Line2D move = new Line2D.Double(prevCoord[0], prevCoord[1], currCoord[0], currCoord[1]);
+				
+				while(CalculationFunctions.intersects(noFlyZone, move)) {
+					
+					// var linesIntersected = CalculationFunctions.intersectedLines(noFlyZone, move);
+					
+					angle = dirDesider.nextInt(36) * 10;
+					lngNew = prevCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+					latNew = prevCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+					
+					currCoord[0] = lngNew;
+					currCoord[1] = latNew;
+					
+					move = new Line2D.Double(prevCoord[0], prevCoord[1], currCoord[0], currCoord[1]);
+				}
 				
 				var nextPoint = Point.fromLngLat(lngNew, latNew);
 				lineList.add(nextPoint);
@@ -172,25 +197,6 @@ public class DroneMovement {
 				
 			}
 			
-			
-//			do {
-//				
-//				angle = CalculationFunctions.getAngle(currCoord, nextCoord);
-//				
-//				var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
-//				var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
-//				
-//				currCoord[0] = lngNew;
-//				currCoord[1] = latNew;
-//								
-//				var nextPoint = Point.fromLngLat(lngNew, latNew);
-//				lineList.add(nextPoint);
-//				
-//				moveCounter++;
-//				dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
-//				
-//			}while(dist > 0.0002);
-			
 			System.out.println("Move counter: " + moveCounter);
 			
 			var nextStation = DataReader.readStation(nextCoord, route.get(nextCoord));
@@ -204,54 +210,70 @@ public class DroneMovement {
 			
 		}
 		
-		currCoord[0] = nextCoord[0];
-		currCoord[1] = nextCoord[1];
-		
-		System.out.println("Curr coord lng = " + currCoord[0] + " " + "lat = " + currCoord[1]);
-		
-		nextCoord[0] = startingCoordinates[0];
-		nextCoord[1] = startingCoordinates[1];
-		
-		System.out.println("Next coord lng = " + startingCoordinates[0] + " " + "lat = " + startingCoordinates[1]);
-		System.out.println("Next coord lng = " + nextCoord[0] + " " + "lat = " + nextCoord[1]);
-		
-		dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
-		System.out.println("Distance between last visited and start = " + dist);
-		
-		while(dist > 0.0003) {
+		// Start moving towards the starting point if we have available moves
+		if(moveCounter < 150) {
 			
-			angle = CalculationFunctions.getAngle(currCoord, nextCoord);
+			currCoord[0] = nextCoord[0];
+			currCoord[1] = nextCoord[1];
 			
-			var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
-			var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+			System.out.println("Curr coord lng = " + currCoord[0] + " " + "lat = " + currCoord[1]);
 			
-			prevCoord[0] = currCoord[0];
-			prevCoord[1] = currCoord[1];
+			nextCoord[0] = startingCoordinates[0];
+			nextCoord[1] = startingCoordinates[1];
 			
-			currCoord[0] = lngNew;
-			currCoord[1] = latNew;
-							
-			var nextPoint = Point.fromLngLat(lngNew, latNew);
-			lineList.add(nextPoint);
+			System.out.println("Next coord lng = " + startingCoordinates[0] + " " + "lat = " + startingCoordinates[1]);
+			System.out.println("Next coord lng = " + nextCoord[0] + " " + "lat = " + nextCoord[1]);
 			
-			moveCounter++;
 			dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
+			System.out.println("Distance between last visited and start = " + dist);
 			
-			if(dist > 0.0003) {
+			while(dist > 0.0003 && moveCounter <= 150) {
 				
-				logString += moveCounter + "," + prevCoord[0] + "," + prevCoord[1] + "," + angle + "," + currCoord[0] + "," + currCoord[1] + "," + "null" + "\n";
+				angle = CalculationFunctions.getAngle(currCoord, nextCoord);
 				
-			} else {
+				var lngNew = currCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+				var latNew = currCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
 				
-				logString += moveCounter + "," + prevCoord[0] + "," + prevCoord[1] + "," + angle + "," + currCoord[0] + "," + currCoord[1] + "," + "null";
+				prevCoord[0] = currCoord[0];
+				prevCoord[1] = currCoord[1];
 				
-			}
+				currCoord[0] = lngNew;
+				currCoord[1] = latNew;
+				
+				Line2D move = new Line2D.Double(prevCoord[0], prevCoord[1], currCoord[0], currCoord[1]);
+				
+				while(CalculationFunctions.intersects(noFlyZone, move)) {
+					
+					// var linesIntersected = CalculationFunctions.intersectedLines(noFlyZone, move);
+					angle = dirDesider.nextInt(36) * 10;
+					lngNew = prevCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
+					latNew = prevCoord[1] + Math.sin((angle*Math.PI) / 180)*0.0003;
+					
+					currCoord[0] = lngNew;
+					currCoord[1] = latNew;
+					
+					move = new Line2D.Double(prevCoord[0], prevCoord[1], currCoord[0], currCoord[1]);
+				}
+				
+				var nextPoint = Point.fromLngLat(lngNew, latNew);
+				lineList.add(nextPoint);
+				
+				moveCounter++;
+				dist = CalculationFunctions.calculateDistBetweenPoints(currCoord, nextCoord);
+				
+				if(dist > 0.0003) {
+					
+					logString += moveCounter + "," + prevCoord[0] + "," + prevCoord[1] + "," + angle + "," + currCoord[0] + "," + currCoord[1] + "," + "null" + "\n";
+					
+				} else {
+					
+					logString += moveCounter + "," + prevCoord[0] + "," + prevCoord[1] + "," + angle + "," + currCoord[0] + "," + currCoord[1] + "," + "null";
+					
+				}
+				
+			}	
 			
 		}
-		
-		LineString line = LineString.fromLngLats(lineList);
-		Geometry lineGeo = (Geometry)line;
-		Feature lineFeature = Feature.fromGeometry(lineGeo);
 		
 //		System.out.println("Is temp empty? " + temp.isEmpty());
 //		if(!temp.isEmpty()) {
@@ -274,6 +296,12 @@ public class DroneMovement {
 //			
 //		}
 		
+		
+		// Add the LineString to the feature list and finish print to files
+		LineString line = LineString.fromLngLats(lineList);
+		Geometry lineGeo = (Geometry)line;
+		Feature lineFeature = Feature.fromGeometry(lineGeo);
+		
 		featureList.add(lineFeature);
         FeatureCollection fc = FeatureCollection.fromFeatures(featureList);
         
@@ -290,7 +318,5 @@ public class DroneMovement {
         System.out.println(moveCounter);
 		
 	}
-	
-	
 
 }

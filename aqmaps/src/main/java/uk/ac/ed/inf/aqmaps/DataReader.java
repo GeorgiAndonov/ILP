@@ -9,6 +9,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.awt.geom.Line2D;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -30,11 +31,12 @@ public class DataReader {
 	// This will store the values to colour - I've made it private because I do not want it to be accessed by other classes
 	private static HashMap<Integer, String> valueColour = new HashMap<Integer, String>();
 	
-	// This will store the values to marker symbol
+	// This will store the values to marker symbol - same as the above in terms of privacy
 	// Although we have only two options, doing it this way with HashMap would make it easier for adding other symbols in the future.
 	private static HashMap<Integer, String> valueSymbol = new HashMap<Integer, String>();
 	
-
+	
+	// Filling functions when the maps are empty
 	private static void fillValueColour() {
 		
         valueColour.put(0, "#00ff00");
@@ -55,8 +57,10 @@ public class DataReader {
 		
 	}
 	
+	// This function reads the values from a station and returns the appropriate feature for it
 	public static Feature readStation(double[] coord, Station nearestSt) {
 		
+		// Check if the maps are empty and if that's the case - fill them with the necessary information
 		if(valueColour.isEmpty()) {
 			DataReader.fillValueColour();
 		}
@@ -65,6 +69,7 @@ public class DataReader {
 			DataReader.fillValueSymbol();
 		}
 		
+		// Create the feature
 		Point stationPoint = Point.fromLngLat(coord[0], coord[1]);
 		Geometry stationGeo = (Geometry)stationPoint;
 		Feature stationFeature = Feature.fromGeometry(stationGeo);
@@ -72,7 +77,7 @@ public class DataReader {
 		stationFeature.addStringProperty("marker-size", "medium");
 		stationFeature.addStringProperty("location", nearestSt.getLocation());
 		
-		
+		// Check if the station is eligible to be read and read it
 		if(nearestSt.getBattery() < 10) {
 			stationFeature.addStringProperty("rgb-string", "#000000");
 			stationFeature.addStringProperty("marker-color", "#000000");
@@ -113,7 +118,7 @@ public class DataReader {
 		
 	}
 	
-	// This function is mostly used for testing purposes - to visualise the whole map
+	// This function is mostly used for testing purposes - to visualise the whole map without the path and containing the confinement area
 	public static void createMapWithStations(double[] nWest, double[] nEast, double[] sEast, double[] sWest, HttpClient client, ArrayList<Station> stationList) throws IOException, InterruptedException {
 		
 		var featureList = new ArrayList<Feature>();
@@ -151,15 +156,6 @@ public class DataReader {
 				double[] coord = {lng, lat};
 				
 				var stationFeature = DataReader.readStation(coord, station);
-//				Point stationPoint = Point.fromLngLat(lng, lat);
-//				Geometry stationGeo = (Geometry)stationPoint;
-//				Feature stationFeature = Feature.fromGeometry(stationGeo);
-//				
-//				stationFeature.addStringProperty("marker-size", "medium");
-//				stationFeature.addStringProperty("location", station.getLocation());
-//				stationFeature.addStringProperty("rgb-string", "#aaaaaa");
-//				stationFeature.addStringProperty("marker-color", "#aaaaaa");
-				
 				featureList.add(stationFeature);
 				
 			} catch (IOException e1) {
@@ -183,7 +179,7 @@ public class DataReader {
 	}
 	
 	
-	// Reads all stations on the current date
+	// Reads all stations on a given date and returns them in a list - check the class Station for more information about the objects
 	public static ArrayList<Station> readStationsForDay(String day, String month, String year, HttpClient client) {
 		
     	var request = HttpRequest.newBuilder()
@@ -218,7 +214,7 @@ public class DataReader {
 		
 	}
 	
-	// This function will create a hashmap that will be used when measuring the stations
+	// This function will create a hashmap that will be used when measuring the stations - it maps the coordinates to the specified station
 	public static HashMap<double[], Station> computeCoordinates(ArrayList<Station> stationList, HttpClient client) {
 		
 		var mapping = new HashMap<double[], Station>();
@@ -263,7 +259,10 @@ public class DataReader {
 		
 	}
 	
-	public static void getConfinementArea(HttpClient client) {
+	// This function constructs the list containing the no fly polygons
+	public static ArrayList<ArrayList<Line2D>> getConfinementArea(double[] nWest, double[] nEast, double[] sEast, double[] sWest, HttpClient client) {
+		
+		var polygonList = new ArrayList<ArrayList<Line2D>>();
 		
 		var requestLocation = HttpRequest.newBuilder().uri(URI.create("http://localhost:80/buildings/no-fly-zones.geojson")).build();
 		HttpResponse<String> response;
@@ -277,19 +276,38 @@ public class DataReader {
 			
 			for(var nf : noFlyList) {
 				
+				// Each polygon is a list of objects of type Line2D
+				var polygon = new ArrayList<Line2D>();
+				
 				System.out.println(nf.getProperty("name"));
+				
+				// Extract the coordinates from the geojson feature
 				var geoNF = nf.geometry();
 				var geoPoly = (Polygon)geoNF;
+				var geoPolyCoord = geoPoly.coordinates().get(0);
 				
-				for(var coord : geoPoly.coordinates().get(0)) {
+				for(var i = 0; i < geoPolyCoord.size() - 1; i++) {
 					
-					System.out.println(coord.coordinates().toString());
+//					System.out.println(geoPolyCoord.get(i).coordinates().toString());
 					
+					// Create a line with the specified coordinates and add it to the polygon
+					var l = new Line2D.Double(geoPolyCoord.get(i).longitude(), geoPolyCoord.get(i).latitude(), geoPolyCoord.get(i+1).longitude(), geoPolyCoord.get(i+1).latitude());
+					polygon.add(l);
 				}
 				
-				System.out.println();
+				// Add the polygon to the final list
+				polygonList.add(polygon);
 				
 			}
+			
+			// Finally, we add the confinement area as it is predefined for our project
+			var confinementArea = new ArrayList<Line2D>();
+			confinementArea.add(new Line2D.Double(nWest[0], nWest[1], nEast[0], nEast[1]));
+			confinementArea.add(new Line2D.Double(nEast[0], nEast[1], sEast[0], sEast[1]));
+			confinementArea.add(new Line2D.Double(sEast[0], sEast[1], sWest[0], sWest[1]));
+			confinementArea.add(new Line2D.Double(sWest[0], sWest[1], nWest[0], nWest[1]));
+			
+			polygonList.add(confinementArea);
 			
 			
 		} catch (IOException e1) {
@@ -301,6 +319,81 @@ public class DataReader {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
+    	
+		return polygonList;
+		
+	}
+	
+	
+	// This is a test function to test if the no fly zones are created properly - prints some information about them and creates a map that checks
+	// if everything is working properly
+	public static void printPolyLineInfo(ArrayList<ArrayList<Line2D>> polys) throws FileNotFoundException {
+		
+		var j = 1;
+		
+		// Check the information for each line in each polygon
+    	for(var poly : polys) {
+    		
+    		var i = 1;
+    		System.out.println("Polygon num " + j + " :");
+    		
+			for(var line : poly) {
+				
+				System.out.println("Line " + i + " :");
+				System.out.println("Line X1: " + line.getX1());
+				System.out.println("Line Y1: " + line.getY1());
+				System.out.println("Line X2: " + line.getX2());
+				System.out.println("Line Y2: " + line.getY2());
+				i++;
+			}
+			
+			j++;
+			System.out.println();
+    	}
+    	
+    	var featureList = new ArrayList<Feature>();
+    	
+    	// Create a geojson object to test the visualisation
+    	for(var poly : polys) {
+    		
+    		var lineList = new ArrayList<Point>();
+    		
+    		for(var line : poly) {
+    			
+    			Point l1 = Point.fromLngLat(line.getX1(), line.getY1());
+    			Point l2 = Point.fromLngLat(line.getX2(), line.getY2());
+    			
+    			if(!lineList.contains(l1)) {
+    				lineList.add(l1);
+    			}
+    			
+    			lineList.add(l2);
+    			
+    		}
+    		LineString ls = LineString.fromLngLats(lineList);
+    		Geometry lineS = (Geometry)ls;
+    		Feature lsF = Feature.fromGeometry(lineS);
+    		featureList.add(lsF);
+    		
+    	}
+    	
+    	// Add a testing line and create the file for testing
+    	Point q1 = Point.fromLngLat(-3.1868, 55.9446);
+    	Point q2 = Point.fromLngLat(-3.1879, 55.9447);
+    	LineString ls2 = LineString.fromLngLats(Arrays.asList(q1, q2));
+    	Geometry ls2G = (Geometry)ls2;
+    	Feature ls2F = Feature.fromGeometry(ls2G);
+    	featureList.add(ls2F);
+    	
+        FeatureCollection fc = FeatureCollection.fromFeatures(featureList);
+        
+        String output = fc.toJson();
+        
+        PrintWriter out = new PrintWriter("testing.geojson");
+        out.println(output);
+        out.close();
+    	
+		
 	}
 	
 }

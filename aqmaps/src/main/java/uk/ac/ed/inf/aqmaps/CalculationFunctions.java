@@ -1,11 +1,12 @@
 package uk.ac.ed.inf.aqmaps;
 
+import java.awt.geom.Line2D;
 import java.util.ArrayList;
 
 public class CalculationFunctions {
 
 	
-	// Helper function that will help us with calculating the distance between 2 points
+	// Helper function that calculates the distance between 2 points
 	public static double calculateDistBetweenPoints(double[] point1, double[] point2) {
 		
 		return Math.hypot(Math.abs(point1[0] - point2[0]), Math.abs(point1[1] - point2[1]));
@@ -30,16 +31,46 @@ public class CalculationFunctions {
 		return angle;
 	}
 	
-	public static void deepArrayListCopy(ArrayList<double[]> arr1, ArrayList<double[]> arr2) {
+	// Returns an array containing the lines crossed - used in the movement function
+	public static ArrayList<Line2D> intersectedLines(ArrayList<ArrayList<Line2D>> noFlyZone, Line2D move) {
 		
-		for(var i = 0; i < arr1.size(); i++) {
+		var crossedLines = new ArrayList<Line2D>();
+		
+		for(var poly : noFlyZone) {
 			
-			arr1.get(i)[0] = arr2.get(i)[0];
-			arr1.get(i)[1] = arr2.get(i)[1];
+			for(var line : poly) {
+				
+				if(move.intersectsLine(line)) {
+					
+					crossedLines.add(line);
+					
+				}
+				
+			}
 			
 		}
 		
+		return crossedLines;
+		
 	}
 	
+	// Returns true if the line crosses one or more of the lines in the no fly zone - used in the movement function
+	public static Boolean intersects(ArrayList<ArrayList<Line2D>> noFlyZone, Line2D move) {
+		
+		var test = new ArrayList<Boolean>();
+		
+		for(var poly : noFlyZone) {
+			
+			for(var line : poly) {
+				
+				test.add(move.intersectsLine(line));
+				
+			}
+			
+		}
+		
+		return test.contains(true);
+		
+	}
 	
 }
