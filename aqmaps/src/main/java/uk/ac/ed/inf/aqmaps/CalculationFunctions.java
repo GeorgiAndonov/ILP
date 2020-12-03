@@ -6,6 +6,8 @@ import java.util.ArrayList;
 public class CalculationFunctions {
 
 	
+	public static Line2D crossedLine;
+	
 	// Helper function that calculates the distance between 2 points
 	public static double calculateDistBetweenPoints(double[] point1, double[] point2) {
 		
@@ -54,6 +56,7 @@ public class CalculationFunctions {
 		
 	}
 	
+	
 	// Returns true if the line crosses one or more of the lines in the no fly zone - used in the movement function
 	public static Boolean intersects(ArrayList<ArrayList<Line2D>> noFlyZone, Line2D move) {
 		
@@ -71,6 +74,41 @@ public class CalculationFunctions {
 		
 		return test.contains(true);
 		
+	}
+	
+	public static Line2D intersectedLines2(ArrayList<ArrayList<Line2D>> noFlyZone, Line2D move) {
+		
+		var crossedLines = new ArrayList<Line2D>();
+		
+		for(var poly : noFlyZone) {
+			
+			for(var line : poly) {
+				
+				if(move.intersectsLine(line)) {
+					
+					crossedLines.add(line);
+					
+				}
+				
+			}
+			
+		}
+		
+		return crossedLines.get(0);
+		
+	}
+	
+	public static Boolean isInConfinement(ArrayList<Line2D> confinementArea, Line2D move) {
+		
+		var test = new ArrayList<Boolean>();
+		
+		for(var line : confinementArea) {
+
+			test.add(move.intersectsLine(line));
+			
+		}
+		
+		return test.contains(true);
 	}
 	
 }

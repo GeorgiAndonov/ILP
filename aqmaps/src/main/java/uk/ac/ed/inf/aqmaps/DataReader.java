@@ -260,7 +260,7 @@ public class DataReader {
 	}
 	
 	// This function constructs the list containing the no fly polygons
-	public static ArrayList<ArrayList<Line2D>> getConfinementArea(double[] nWest, double[] nEast, double[] sEast, double[] sWest, HttpClient client) {
+	public static ArrayList<ArrayList<Line2D>> getNoFlyArea(HttpClient client) {
 		
 		var polygonList = new ArrayList<ArrayList<Line2D>>();
 		
@@ -299,15 +299,6 @@ public class DataReader {
 				polygonList.add(polygon);
 				
 			}
-			
-			// Finally, we add the confinement area as it is predefined for our project
-			var confinementArea = new ArrayList<Line2D>();
-			confinementArea.add(new Line2D.Double(nWest[0], nWest[1], nEast[0], nEast[1]));
-			confinementArea.add(new Line2D.Double(nEast[0], nEast[1], sEast[0], sEast[1]));
-			confinementArea.add(new Line2D.Double(sEast[0], sEast[1], sWest[0], sWest[1]));
-			confinementArea.add(new Line2D.Double(sWest[0], sWest[1], nWest[0], nWest[1]));
-			
-			polygonList.add(confinementArea);
 			
 			
 		} catch (IOException e1) {
