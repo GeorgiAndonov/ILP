@@ -194,47 +194,6 @@ public class DroneMovement {
 					coordChange2[0] = lineIntersected.getX2();
 					coordChange2[1] = lineIntersected.getY2();
 
-//					var lineL = new ArrayList<Point>();
-//					var test = new ArrayList<Point>();
-//					
-//					Point test1 = Point.fromLngLat(prevCoord[0], prevCoord[1]);
-//					Point test2 = Point.fromLngLat(currCoord[0], currCoord[1]);
-//					
-
-					
-					
-//					test.add(test1);
-//					test.add(test2);
-//					
-//					Point inersected1 = Point.fromLngLat(coordChange1[0], coordChange1[1]);
-//					Point inersected2 = Point.fromLngLat(coordChange2[0], coordChange2[1]);
-//					
-//					lineL.add(inersected1);
-//					lineL.add(inersected2);
-//					
-//					LineString line = LineString.fromLngLats(lineL);
-//					Geometry lineGeo = (Geometry)line;
-//					Feature lineFeature = Feature.fromGeometry(lineGeo);
-//					
-//					LineString line2 = LineString.fromLngLats(test);
-//					Geometry lineGeo2 = (Geometry)line2;
-//					Feature lineFeature2 = Feature.fromGeometry(lineGeo2);
-//					
-//					var lineF = new ArrayList<Feature>();
-//					lineF.add(lineFeature);
-//					lineF.add(lineFeature2);
-//					
-//			        FeatureCollection fc = FeatureCollection.fromFeatures(lineF);
-//			        
-//			        String output = fc.toJson();
-//			        
-//			        PrintWriter out = new PrintWriter("TT-" + day + "-" + month + "-" + year + ".geojson");
-//			        out.println(output);
-//			        out.close();
-//			        
-//					
-//					
-//					//
 					var angle2 = CalculationFunctions.getAngle(coordChange1, coordChange2);
 					
 //					angle = CalculationFunctions.getAngle(coordChange1, coordChange2);
@@ -385,7 +344,7 @@ public class DroneMovement {
 //					var angle2 = CalculationFunctions.getAngle(coordChange1, coordChange2);
 					
 //					if(Math.abs(angle2 - angle) > 90) {
-//						
+//					
 //						angle = angle2 - 180;
 //						
 //					} else {
@@ -393,8 +352,10 @@ public class DroneMovement {
 //						angle = angle2;
 //						
 //					}
-//					
+					
 					angle = CalculationFunctions.getAngle(coordChange1, coordChange2);
+					
+					angle = (angle + 180) % 360;
 					
 //					angle = dirDesider.nextInt(36) * 10;
 					lngNew = prevCoord[0] + Math.cos((angle*Math.PI) / 180)*0.0003;
@@ -402,8 +363,6 @@ public class DroneMovement {
 					
 					currCoord[0] = lngNew;
 					currCoord[1] = latNew;
-					
-//					var move_test = new Line2D.Double(prevCoord[0], prevCoord[1], currCoord[0], currCoord[1]);
 					
 					move = new Line2D.Double(prevCoord[0], prevCoord[1], currCoord[0], currCoord[1]);
 				}
