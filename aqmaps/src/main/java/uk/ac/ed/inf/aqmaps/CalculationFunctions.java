@@ -1,12 +1,9 @@
 package uk.ac.ed.inf.aqmaps;
 
 import java.awt.geom.Line2D;
-import java.util.ArrayList;
+import java.util.Random;
 
 public class CalculationFunctions {
-
-	
-	public static Line2D crossedLine;
 	
 	// Helper function that calculates the distance between 2 points
 	public static double calculateDistBetweenPoints(double[] point1, double[] point2) {
@@ -33,82 +30,28 @@ public class CalculationFunctions {
 		return angle;
 	}
 	
-	// Returns an array containing the lines crossed - used in the movement function
-	public static ArrayList<Line2D> intersectedLines(ArrayList<ArrayList<Line2D>> noFlyZone, Line2D move) {
+	public static int getAngle(double[] p1, double[] p2, double lastAngle, Random rand) {
 		
-		var crossedLines = new ArrayList<Line2D>();
+		var angle = (int)Math.toDegrees(Math.atan2(p2[1] - p1[1], p2[0] - p1[0]));
 		
-		for(var poly : noFlyZone) {
+		angle = (int)(Math.round(angle / 10.0) * 10);
+		
+		if(angle < 0) {
+			angle += 360;
+		}
+		
+		if(angle == 360) {
+			angle = 0;
+		}
+		
+		if(angle % 180 == lastAngle % 180 && angle != lastAngle) {
 			
-			for(var line : poly) {
-				
-				if(move.intersectsLine(line)) {
-					
-					crossedLines.add(line);
-					
-				}
-				
-			}
+			angle = rand.nextInt(36) * 10;
 			
 		}
 		
-		return crossedLines;
 		
-	}
-	
-	
-	// Returns true if the line crosses one or more of the lines in the no fly zone - used in the movement function
-	public static Boolean intersects(ArrayList<ArrayList<Line2D>> noFlyZone, Line2D move) {
-		
-		var test = new ArrayList<Boolean>();
-		
-		for(var poly : noFlyZone) {
-			
-			for(var line : poly) {
-				
-				test.add(move.intersectsLine(line));
-				
-			}
-			
-		}
-		
-		return test.contains(true);
-		
-	}
-	
-	public static Line2D intersectedLines2(ArrayList<ArrayList<Line2D>> noFlyZone, Line2D move) {
-		
-		var crossedLines = new ArrayList<Line2D>();
-		
-		for(var poly : noFlyZone) {
-			
-			for(var line : poly) {
-				
-				if(move.intersectsLine(line)) {
-					
-					crossedLines.add(line);
-					
-				}
-				
-			}
-			
-		}
-		
-		return crossedLines.get(0);
-		
-	}
-	
-	public static Boolean isInConfinement(ArrayList<Line2D> confinementArea, Line2D move) {
-		
-		var test = new ArrayList<Boolean>();
-		
-		for(var line : confinementArea) {
-
-			test.add(move.intersectsLine(line));
-			
-		}
-		
-		return test.contains(true);
+		return angle;
 	}
 	
 }

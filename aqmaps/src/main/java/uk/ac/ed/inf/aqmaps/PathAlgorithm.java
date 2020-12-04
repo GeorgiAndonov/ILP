@@ -3,7 +3,6 @@ package uk.ac.ed.inf.aqmaps;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.lang.Math;
 
 // This class find the route that the drone will follow
 public class PathAlgorithm {

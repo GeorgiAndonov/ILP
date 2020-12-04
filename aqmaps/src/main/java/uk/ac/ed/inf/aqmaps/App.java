@@ -52,20 +52,9 @@ public class App
 		confinementArea.add(new Line2D.Double(SOUTHEAST[0], SOUTHEAST[1], SOUTHWEST[0], SOUTHWEST[1]));
 		confinementArea.add(new Line2D.Double(SOUTHWEST[0], SOUTHWEST[1], NORTHWEST[0], NORTHWEST[1]));
     	
-//    	for(var st : stationList) {
-//    		
-//    		System.out.println(st.getLocation());
-//    		
-//    	}
     	
     	DataReader.createMapWithStations(NORTHWEST, NORTHEAST, SOUTHEAST, SOUTHWEST, client, stationList);
     	HashMap<double[], Station> coordinatesStations = DataReader.computeCoordinates(stationList, client);
-    	
-//    	for(var t : test.keySet()) {
-//    		System.out.println();
-//    		System.out.println(t[0] + " " + t[1] + " ");
-//    		System.out.println(test.get(t).getLocation());
-//    	}
     	
     	double[] startCoordinates = {Double.parseDouble(args[4]), Double.parseDouble(args[3])};
     	
@@ -77,48 +66,9 @@ public class App
 			System.out.println(route.get(r).getLocation());
 			
 		}
-		
-    	
-//    	DroneMovement.test();
+
     	DroneMovement.droneMovement(confinementArea, startCoordinates, route, noFlyZone, args[0], args[1], args[2], args[5]);
-//    	DroneMovement.droneMovement2(confinementArea, startCoordinates, route, noFlyZone, args[0], args[1], args[2], args[5]);
-//		DataReader.printPolyLineInfo(noFlyZone);
-		
-//		double[] p1 = {-3.186908, 55.945421};
-//		double[] p2 = {-3.187101, 55.945651};
-//		
-//		System.out.println(CalculationFunctions.getAngle(p1, p2));
-//		
-//		Point p11 = Point.fromLngLat(p1[0], p1[1]);
-//		Point p12 = Point.fromLngLat(p2[0], p2[1]);
-//		Point p13 = Point.fromLngLat(-3.186998, 55.945366);
-//		Point p14 = Point.fromLngLat(-3.187101, 55.945691);
-//		Point p15 = Point.fromLngLat(-3.1872937, 55.945881);
-//		
-////		LineString ls1 = LineString.fromLngLats(Arrays.asList(p13, p14));
-////		Geometry gs1 = (Geometry)ls1;
-////		Feature fs1 = Feature.fromGeometry(gs1);
-//		
-//		LineString ls2 = LineString.fromLngLats(Arrays.asList(p14, p15));
-//		Geometry gs2 = (Geometry)ls2;
-//		Feature fs2 = Feature.fromGeometry(gs2);
-//		
-//		LineString ls = LineString.fromLngLats(Arrays.asList(p11, p12));
-//		Geometry gs = (Geometry)ls;
-//		Feature fs = Feature.fromGeometry(gs);
-//		
-//		var tt = new ArrayList<Feature>();
-//		tt.add(fs);
-////		tt.add(fs1);
-//		tt.add(fs2);
-//		
-//		FeatureCollection fc = FeatureCollection.fromFeatures(tt);
-//		
-//        String output = fc.toJson();
-//        
-//        PrintWriter out = new PrintWriter("testing11.geojson");
-//        out.println(output);
-//        out.close();
+
 		
     }
 }
