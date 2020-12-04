@@ -33,6 +33,16 @@ public class PathAlgorithm {
 			
 		}
 		
+		// Printing the locations found in the correct order
+		System.out.println("Location of the stations in order:");
+		for(var r : route.keySet()) {
+			
+			System.out.println(route.get(r).getLocation());
+			
+		}
+		
+		System.out.println();
+		
 		return route;
 		
 	}
@@ -105,19 +115,6 @@ public class PathAlgorithm {
 			
 		}
 		
-		for(var i = 0; i < result.size(); i++) {
-			
-			System.out.println("Result " + i + " lng = " + result.get(i)[0]);
-			System.out.println("Result " + i + " lat = " + result.get(i)[1]);
-			
-		}
-		
-		System.out.println();
-		
-		
-		// Calculate the total tour value
-//		System.out.println(PathAlgorithm.calculateTourValue(result));
-		
 		System.out.println("Total length: " + PathAlgorithm.calculateTourValuePrint(result));
 		
 		
@@ -139,18 +136,11 @@ public class PathAlgorithm {
 		return dist;
 	}
 	
-	// Function used only for testing - prints some values in order to check if they are correct
+	// Function used only for testing - prints some values in order to check if they are correct and approximately how long will the path be
 	private static double calculateTourValuePrint(ArrayList<double[]> tourCoordinates) {
 		
 		double dist = 0;
 		int movesSum = 0;
-		
-		System.out.println("First coord lng: " + tourCoordinates.get(0)[0]);
-		System.out.println("First coord lat: " + tourCoordinates.get(0)[1]);
-		
-		System.out.println("Second coord lng: " + tourCoordinates.get(1)[0]);
-		System.out.println("Second coord lat: " + tourCoordinates.get(1)[1]);
-		
 		
 		for(var i = 0; i < tourCoordinates.size(); i++) {
 			

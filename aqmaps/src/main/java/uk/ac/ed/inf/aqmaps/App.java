@@ -1,27 +1,9 @@
 package uk.ac.ed.inf.aqmaps;
 import java.awt.geom.Line2D;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.ConnectException;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.lang.reflect.Type;
-import java.util.LinkedHashMap;
-import java.util.Random;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import com.mapbox.geojson.Feature;
-import com.mapbox.geojson.FeatureCollection;
-import com.mapbox.geojson.Geometry;
-import com.mapbox.geojson.LineString;
-import com.mapbox.geojson.Point;;
 
 
 
@@ -43,32 +25,31 @@ public class App
     public static void main( String[] args ) throws IOException, InterruptedException
     {
      
+    	// Read from the server the station list for the day
     	var stationList = DataReader.readStationsForDay(args[0], args[1], args[2], client);
+    	// Read from the server the no-fly-zone
     	var noFlyZone = DataReader.getNoFlyArea(client);
     	
+    	// Create the confinement area
 		var confinementArea = new ArrayList<Line2D>();
 		confinementArea.add(new Line2D.Double(NORTHWEST[0], NORTHWEST[1], NORTHEAST[0], NORTHEAST[1]));
 		confinementArea.add(new Line2D.Double(NORTHEAST[0], NORTHEAST[1], SOUTHEAST[0], SOUTHEAST[1]));
 		confinementArea.add(new Line2D.Double(SOUTHEAST[0], SOUTHEAST[1], SOUTHWEST[0], SOUTHWEST[1]));
 		confinementArea.add(new Line2D.Double(SOUTHWEST[0], SOUTHWEST[1], NORTHWEST[0], NORTHWEST[1]));
     	
-    	
-    	DataReader.createMapWithStations(NORTHWEST, NORTHEAST, SOUTHEAST, SOUTHWEST, client, stationList);
+    	// Get the stations combined with their coordinates
     	HashMap<double[], Station> coordinatesStations = DataReader.computeCoordinates(stationList, client);
     	
+    	// Parse the starting coordinates
     	double[] startCoordinates = {Double.parseDouble(args[4]), Double.parseDouble(args[3])};
     	
+    	// Create the route the drone's supposed to follow
     	var route = PathAlgorithm.createRoute(startCoordinates, coordinatesStations);
-    	
-		// Printing the locations found
-		for(var r : route.keySet()) {
-			
-			System.out.println(route.get(r).getLocation());
-			
-		}
-
-    	DroneMovement.droneMovement(confinementArea, startCoordinates, route, noFlyZone, args[0], args[1], args[2], args[5]);
-
 		
+		// Initialise new movement
+		var newMovement = new DroneMovement(args[5]);
+		// Execute the movement
+    	newMovement.droneMovement(confinementArea, startCoordinates, route, noFlyZone, args[0], args[1], args[2]);
+
     }
 }

@@ -235,10 +235,6 @@ public class DataReader {
 				var lng = Double.parseDouble(locationDetails.getCoord().getLng());
 				var lat = Double.parseDouble(locationDetails.getCoord().getLat());
 				
-//				System.out.println("Lng: " + lng);
-//				System.out.println("Lat: " + lat);
-//				System.out.println(station.getLocation());
-				
 				double[] coord = {lng, lat};
 				
 				mapping.put(coord, station);
@@ -273,6 +269,8 @@ public class DataReader {
 			var noFlyFeatures = FeatureCollection.fromJson(result);
 			var noFlyList = noFlyFeatures.features();
 			
+			System.out.println("Name of the buildings that are in the no-fly zone: ");
+			
 			for(var nf : noFlyList) {
 				
 				// Each polygon is a list of objects of type Line2D
@@ -286,8 +284,6 @@ public class DataReader {
 				var geoPolyCoord = geoPoly.coordinates().get(0);
 				
 				for(var i = 0; i < geoPolyCoord.size() - 1; i++) {
-					
-//					System.out.println(geoPolyCoord.get(i).coordinates().toString());
 					
 					// Create a line with the specified coordinates and add it to the polygon
 					var l = new Line2D.Double(geoPolyCoord.get(i).longitude(), geoPolyCoord.get(i).latitude(), geoPolyCoord.get(i+1).longitude(), geoPolyCoord.get(i+1).latitude());
@@ -310,6 +306,7 @@ public class DataReader {
 			e1.printStackTrace();
 		}
     	
+		System.out.println();
 		return polygonList;
 		
 	}

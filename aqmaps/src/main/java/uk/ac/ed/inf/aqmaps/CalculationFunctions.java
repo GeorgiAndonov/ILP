@@ -1,6 +1,4 @@
 package uk.ac.ed.inf.aqmaps;
-
-import java.awt.geom.Line2D;
 import java.util.Random;
 
 public class CalculationFunctions {
