@@ -1,1 +1,1 @@
-The class PathAlgorithm works but the code there is written in a really bad way. Some refactoring will be needed.
+The class DroneMovement works but the code there is written in a really bad way. Some refactoring will be needed.
